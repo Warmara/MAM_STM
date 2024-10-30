@@ -1,26 +1,29 @@
 
 #include "main.h"
 
-#define TIM2_IRQ	0
-#define Pushbutton	1
+#define TIM2_IRQ		0
+#define PushButton		0
+#define PushButtonIRQ	1
 
 void SystemClock_Config(void);
 
 #if !TIM2_IRQ
 
-void TIM2_init(void){
+void TIM2_init(void){		// Init Timer 2 bez Interruptu
+
 	RCC->APB1ENR |= 0x01;	// povoleni hodin do TIM2 přes hodnotu
 	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;	// povoleni hodin do TIM2 přes makro
 
 	TIM2->PSC = 16000 - 1;
-	TIM2->ARR = 500 / 1;
+	TIM2->ARR = 500 - 1;
 
 	TIM2->CR1 = TIM_CR1_CEN;	// Spusteni TIM2
 }
 
 #else
 
-void TIM2_initIRQ(void){
+void TIM2_initIRQ(void){	// Init Timer 2 s Interruptem
+
 	RCC->APB1ENR |= 0x01;	// povoleni hodin do TIM2 přes hodnotu
 	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;	// povoleni hodin do TIM2 přes makro
 
@@ -36,13 +39,62 @@ void TIM2_initIRQ(void){
 
 
 }
-
-void TIM2_IRQHandler(void){
+void TIM2_IRQHandler(void){	// Timer 2 Interrupt Handler
 	TIM2->SR &= ~TIM_SR_UIF;
 	GPIOA->ODR ^= 0x01 << 5;
 }
 
 #endif
+
+/// !!! Add here Button Inits and Handlers !!!
+
+#if PushButton
+
+void PushButtonInit(void){
+	  //Init for PushButton
+	  RCC->AHB1ENR 	|= 0x01 << 2;	// Aktivace hodin pro GPIOC
+	  GPIOC->MODER	&= ~(3 << 26);  // Nastaveni MODER PC13 jako vstup
+
+	  GPIOC->PUPDR &= ~(3 << (26)); // Clear PUPDR bits for PC13
+	  GPIOC->PUPDR |= (2 << (26));  // Set PUPDR bits to pull-down
+
+}
+
+#endif
+
+
+#if PushButtonIRQ
+
+void PushButtonIRQInit(void){
+
+	  //Init for PushButton Interrupt
+
+	  RCC->AHB1ENR	|= 0x01;
+
+	  EXTI->FTSR	|= EXTI_FTSR_TR13;
+	  EXTI->IMR		|= EXTI_IMR_IM13;
+	  NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+	  SYSCFG->EXTICR[3]	|= SYSCFG_EXTICR4_EXTI13_PC;
+
+}
+void EXTI15_10_IRQHandler(void){
+
+	  //PushButton Interrupt Handler
+
+	  if(EXTI->PR & EXTI_PR_PR13){
+		  EXTI->PR |= EXTI_PR_PR13;
+		  if (GPIOA->ODR == 32){
+		  GPIOA->ODR &= ~1 << 5;
+		  }else{
+		  GPIOA->ODR |= 1 << 5;
+		  }
+	  }
+
+}
+
+#endif
+
 
 int main(void)
 {
@@ -62,29 +114,28 @@ int main(void)
   GPIOA->MODER 	|= 0x01 << 10; 	// Nastavení MODER PA5 jako vystup
   GPIOA->ODR	|= 0x01 << 5;	// rozsvitime LD2 (PA5 = 01)
 
-#if Pushbutton
-  //Init for PushButton
-  RCC->AHB1ENR 	|= 0x01 << 2;	// Aktivace hodin pro GPIOC
-  GPIOC->MODER	&= ~(3 << 26);  // Nastaveni MODER PC13 jako vstup
 
-  GPIOC->PUPDR &= ~(3 << (26)); // Clear PUPDR bits for PC13
-  GPIOC->PUPDR |= (2 << (26));  // Set PUPDR bits to pull-down
-
-  // Inner Variables
-  int depressed = 0;
-
+  //Init for Button
+#if PushButton
+PushButtonInit();
 #endif
+
+#if PushButtonIRQ
+PushButtonIRQInit();
+#endif
+
 
   while (1)
   {
 
-#if Pushbutton
+#if PushButton
 
 	  if(GPIOC->IDR & GPIO_IDR_ID13){
 		  GPIOA->ODR &= ~1 << 5;
 	  }else{
 		  GPIOA->ODR |= 1 << 5;
 	  }
+  }
 
 
 
