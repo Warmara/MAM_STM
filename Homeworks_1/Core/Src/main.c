@@ -24,6 +24,7 @@
 
 
 void SystemClock_Config(void);
+void TIM2_Toggle(void);
 
 
 //TIMER 2 w/ Interrupt
@@ -62,7 +63,7 @@ void LED_init(void){
 #endif
 
 //PushButton (USER)
-#if HW1
+#if HW
 void PushButton_init(void){
 	  //Init for PushButton
 	  RCC->AHB1ENR 	|= 0x01 << 2;	// Aktivace hodin pro GPIOC
@@ -72,6 +73,42 @@ void PushButton_init(void){
 	  GPIOC->PUPDR |= (2 << (26));  // Set PUPDR bits to pull-down
 //	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN;
 }
+#endif
+
+#if HW1
+
+void PushButtonIRQ_Init(void){
+
+	  //Init for PushButton Interrupt
+
+	  RCC->AHB1ENR	|= 0x01;
+
+	  EXTI->FTSR	|= EXTI_FTSR_TR13;
+	  EXTI->IMR		|= EXTI_IMR_IM13;
+	  NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+	  SYSCFG->EXTICR[3]	|= SYSCFG_EXTICR4_EXTI13_PC;
+
+}
+void EXTI15_10_IRQHandler(void){
+
+#if HW1
+	TIM2_Toggle();
+#endif
+
+	  //PushButton Interrupt Handler
+
+//	  if(EXTI->PR & EXTI_PR_PR13){
+		  EXTI->PR |= EXTI_PR_PR13;
+//		  if (GPIOA->ODR == 32){
+//		  GPIOA->ODR &= ~1 << 5;
+//		  }else{
+//		  GPIOA->ODR |= 1 << 5;
+//		  }
+//	  }
+
+}
+
 #endif
 
 #if HW1
@@ -85,8 +122,16 @@ void TIM2_Toggle(void){
 		TIM2->ARR = 99;
 	}
 	TIM2->CNT = 0;
+
+
+//Button Hold
+//	int i = 0;
+//	while (i<10000){
+//		i++;
+//	}
 }
 #endif
+
 
 
 int main(void)
@@ -99,24 +144,12 @@ int main(void)
   TIM2_init();
 
   LED_init();
-  PushButton_init();
+  PushButtonIRQ_Init();
 
 
 
   while (1)
   {
-
-	  if (TIM2->SR & TIM_SR_UIF){
-
-			TIM2->SR &= ~TIM_SR_UIF;
-			GPIOA->ODR ^= 0x01 << 5;
-
-	  }
-	  if(!(GPIOC->IDR & GPIO_IDR_ID13)){
-
-		  TIM2_Toggle();
-
-	  }
 
   }
 }
