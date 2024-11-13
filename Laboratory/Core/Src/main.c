@@ -3,7 +3,8 @@
 
 #define TIM2_IRQ		0
 #define PushButton		0
-#define PushButtonIRQ	1
+#define PushButtonIRQ	0
+#define USART			1
 
 void SystemClock_Config(void);
 
@@ -95,6 +96,34 @@ void EXTI15_10_IRQHandler(void){
 
 #endif
 
+void USART2_init(){
+	RCC->APB1ENR |= RCC_APB1ENR_USART2EN; // enable clock for USART2
+	USART2->BRR = (8 << 4) | 11; //8.6875 (8 mantisa, 11 friction)
+	USART2->CR1 |= USART_CR1_UE;	// povoleni USART rozhraní
+	USART2->CR1 |= USART_CR1_RE;
+	USART2->CR1 |= USART_CR1_TE;
+
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;	// enable clk for GPIOA (PA2, PA3)
+	GPIOA->MODER |= 0x02 << GPIO_MODER_MODE2_Pos; //nastaveni alternativni fce na PA2
+	GPIOA->MODER |= 0x02 << GPIO_MODER_MODE3_Pos; //nastaveni alternativni fce na PA3
+
+	GPIOA->AFR[0] |= 0x07 << GPIO_AFRL_AFSEL2_Pos; //vyber AF7 USART2 pro PA2
+	GPIOA->AFR[0] |= 0x07 << GPIO_AFRL_AFSEL3_Pos; //vyber AF7 USART2 pro PA3
+//	GPIOA->AFR[0] |= 0x07 << 12; // Alternativni pro vyber AF7 USART2 pro PA3
+
+}
+
+void USART2_sendChar(char x){
+	while(!(USART2->SR & USART_SR_TXE));
+	USART2->DR = x;
+}
+
+void USART2_sendText(char *text){
+	while(*text){
+		USART2_sendChar(*text++);
+	}
+}
+
 
 int main(void)
 {
@@ -124,9 +153,19 @@ PushButtonInit();
 PushButtonIRQInit();
 #endif
 
+  //Init for USART
+
+USART2_init();
+//USART2->DR = 'A';
+USART2_sendText("Hello World!\r\n");
 
   while (1)
   {
+
+	  if(USART2->SR & USART_SR_RXNE){
+		  char c = USART2->DR;
+		  USART2_sendChar(c);
+	  }
 
 #if PushButton
 

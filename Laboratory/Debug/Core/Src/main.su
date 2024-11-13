@@ -1,7 +1,7 @@
-../Drivers/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	16	static,ignoring_inline_asm
-../Core/Src/main.c:12:6:TIM2_init	4	static
-../Core/Src/main.c:68:6:PushButtonIRQInit	8	static
-../Core/Src/main.c:81:6:EXTI15_10_IRQHandler	4	static
-../Core/Src/main.c:99:5:main	8	static
-../Core/Src/main.c:162:6:SystemClock_Config	88	static
-../Core/Src/main.c:207:6:Error_Handler	4	static,ignoring_inline_asm
+../Core/Src/main.c:13:6:TIM2_init	4	static
+../Core/Src/main.c:99:6:USART2_init	4	static
+../Core/Src/main.c:116:6:USART2_sendChar	16	static
+../Core/Src/main.c:121:6:USART2_sendText	16	static
+../Core/Src/main.c:128:5:main	16	static
+../Core/Src/main.c:201:6:SystemClock_Config	88	static
+../Core/Src/main.c:246:6:Error_Handler	4	static,ignoring_inline_asm
